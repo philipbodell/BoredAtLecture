@@ -9,9 +9,40 @@
     android:paddingTop="@dimen/activity_vertical_margin"
     tools:context=".DisplayChat" >
 
-    <TextView
+    <Button
+        android:id="@+id/button1"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/welcome_chat" />
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentRight="true"
+        android:layout_marginBottom="28dp"
+        android:layout_marginRight="24dp"
+        android:text="Send"
+        android:onClick="sendMessage" />
+
+    <EditText
+        android:id="@+id/messageField"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBottom="@+id/button1"
+        android:layout_alignParentLeft="true"
+        android:layout_marginLeft="34dp"
+        android:ems="10"
+        android:width="150dp" >
+
+        <requestFocus />
+    </EditText>
+
+    <EditText
+        android:id="@+id/messageBoard"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentTop="true"
+        android:layout_marginTop="15dp"
+        android:ems="10"
+        android:height="320dp"
+        android:inputType="textMultiLine"
+        android:width="400dp" />
 
 </RelativeLayout>
