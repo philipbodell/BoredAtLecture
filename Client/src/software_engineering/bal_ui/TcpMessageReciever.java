@@ -1,80 +1,132 @@
 package software_engineering.bal_ui;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.OptionalDataException;
+import java.io.StreamCorruptedException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.UnknownHostException;
 
+import android.os.Message;
+import boredatlecture.ChatPackage;
+import boredatlecture.Request;
+import boredatlecture.Response;
 
-import android.widget.EditText;
 
 
 public class TcpMessageReciever implements Runnable{
-	
-	//Class variables
+//extends AsyncTask<Void,Void,Void>{
+
+	public volatile String message;
+	private DisplayChat dispChat;
+	private String ip;
 	private int port;
-	private EditText board;
-	private ServerSocket socket;
-	private boolean connected;
-	private boolean online;
+	private String userName;
+	private int lobbyId;
 	
-	public TcpMessageReciever(EditText board, int port,boolean online){
-		this.board = board;
+	public TcpMessageReciever(DisplayChat dispChat, String ip, int port, String userName, int lobbyId){
+		this.dispChat = dispChat;
+		this.ip = ip;
 		this.port = port;
-		this.online = online;
-		connected = false;
+		this.userName = userName;
+		this.lobbyId = lobbyId;
 	}
 	
 	@Override
-	public void run() {
-		// TODO Auto-generated method stub
-		
-		board.setText(board.getText()+"System: recieveThread Started");
-		if(online){
-			try {
-				socket = new ServerSocket(port);
-				connected = true;
-			} catch (IOException e1) {
-				// TODO Auto-generated catch block
-				//e1.printStackTrace();
-				connected = false;
-				board.setText("System: Error 101");
+	public void run(){
+		updateUI("Thread started \n");	
+		//updateUI("doge, wow, such grace\n");
+		while(true&&!(Thread.interrupted())){
+			Socket sock = null;
+			
+			//Attempt connection to the server
+			while(sock == null &&!(Thread.interrupted())){
+				sock = connectionAttempt(ip,port);
 			}
 			
-			Socket inSock = null;
+			//Attempt to send a request for updates
+			while(!sendRequest(sock)&&!(Thread.interrupted()));
+			
+			Response resp = null;
+			while(resp == null&&!Thread.interrupted()){
+				resp = retrieveData(sock);
+				if(resp.update()){
+					updateUI(resp.getPackage().getMessage());
+				}
+			}
+			
 			try {
-				inSock = socket.accept();
-				connected = true;
+				sock.close();
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
-				connected = false;
-				//e.printStackTrace();
-				board.setText("System: Error 102");
+				e.printStackTrace();
 			}
 			
-			while(connected){
-				if(inSock.isConnected()){
-					connected = false;
-					board.setText("System: Error 103");
-					break;
-				}
-				BufferedReader in = null;
-				try {
-					in = new BufferedReader(new InputStreamReader(inSock.getInputStream()));
-				} catch (IOException e) {
-					board.setText("System: Error 104");
-				}
-				String tempMessage = "";
-				try {
-					tempMessage = in.readLine();
-				} catch (IOException e) {
-					board.setText("System: Error: 105");
-				}
-				board.setText(board.getText()+tempMessage);
-			}
 		}
-		board.setText(board.getText()+"System: recieveThread Ending");
+			
+		
+	}
+	private void updateUI(String s){
+		Message m = dispChat.handler.obtainMessage();
+		m.obj = s;
+		dispChat.handler.sendMessage(m);
+	}
+	
+	private Socket connectionAttempt(String in, int portIn){
+		Socket out = null;
+		try {
+			out = new Socket(in, portIn);
+		} catch (UnknownHostException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return out;
+	}
+	
+	private boolean sendRequest(Socket sock){
+		ObjectOutputStream output = null;
+		try {
+			output = new ObjectOutputStream(sock.getOutputStream());
+			output.writeObject(new Request(userName,lobbyId));
+			output.flush();
+			output.close();
+			return true;
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return false;
+		}
+		
+	}
+	
+	private Response retrieveData(Socket sock){
+		ObjectInputStream input = null;
+		try {
+			input = new ObjectInputStream(sock.getInputStream());
+			Object o = input.readObject();
+			input.close();
+			if(o instanceof Response){
+				return((Response) o);
+			}
+			return null;
+		} catch (StreamCorruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return null;
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return null;
+		} catch (ClassNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return null;
+		}
 	}
 	
 	

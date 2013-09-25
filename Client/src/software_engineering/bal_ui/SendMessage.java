@@ -1,9 +1,13 @@
 package software_engineering.bal_ui;
 
 import java.io.IOException;
-import java.io.OutputStream;
-import java.io.PrintWriter;
+import java.io.ObjectOutputStream;
+import java.net.InetAddress;
 import java.net.Socket;
+import java.net.UnknownHostException;
+
+import boredatlecture.ChatPackage;
+
 
 import android.widget.EditText;
 
@@ -14,57 +18,53 @@ public class SendMessage implements Runnable{
 	private Socket client;
 	private String ip;
 	private int port;
-	private EditText board;
 	//private DisplayChat chat;
 	private boolean connected,online;
 	
-	public SendMessage(String message,String ip, int port,EditText board,boolean online){
+	public SendMessage(String message,String ip, int port,boolean online){
 		this.message = message;
 		this.ip = ip;
 		this.port = port;
-		this.board = board;
 		//this.chat = chat;
 		this.online = online;
 		connected = false;
-		
+		//board.setText(board.getText()+"Thread Started");
 	}
 	
 	@Override
 	public void run() {
 		
-			//board.setText(board.getText()+"Thread Started");
-			//chat.boardSet("testelitest", false);
-		
-		
-		// TODO Auto-generated method stub
-		//Here the sending will commence..
-		//board.setText(board.getText()+"\n"+message);
-		
-		if(online){
+		client = null;
+		while(true){
 			try {
-				client = new Socket(this.ip, this.port);
-				board.setText(board.getText()+"Connected");
-				connected = true;
-			} catch (Exception e){
-				board.setText(board.getText()+"System: Error:001");
-			}
-			if(message != null){
-				message = configureString(message);
-			}
-			if(connected){
-				try {
-					OutputStream out = client.getOutputStream();       
-		            PrintWriter output = new PrintWriter(out); 
-		            
-		            output.println(message);
-		            output.flush();
-		            output.close();
-				} catch (IOException e) {
-					board.setText("System: Error:002");
-				}
+				client = new Socket(ip,port);
+				break;
+			} catch (UnknownHostException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
 			}
 		}
-		//board.setText(board.getText()+"Thread Stopped");
+			
+
+		ObjectOutputStream ob;
+		try {
+			ob = new ObjectOutputStream(client.getOutputStream());
+			ob.writeObject(new ChatPackage(12,message));
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		try {
+			client.close();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+			
 	}
 	
 	private String configureString(String input){
